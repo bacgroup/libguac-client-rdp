@@ -20,6 +20,7 @@
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
+ *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS - http://www.ulteo.com
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -39,6 +40,9 @@
 #define __GUAC_RDP_RDP_CLIPRDR_H
 
 #include <freerdp/freerdp.h>
+#include <freerdp/plugins/cliprdr.h>
+
+void guac_rdp_process_cliprdr_init(rdp_guac_client_data* client_data);
 
 void guac_rdp_process_cliprdr_event(guac_client* client, RDP_EVENT* event);
 void guac_rdp_process_cb_monitor_ready(guac_client* client, RDP_EVENT* event);

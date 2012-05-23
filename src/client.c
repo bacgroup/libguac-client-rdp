@@ -21,6 +21,7 @@
  *
  * Contributor(s):
  * Matt Hortman
+ *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS - http://www.ulteo.com
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -66,6 +67,7 @@
 #include "rdp_glyph.h"
 #include "rdp_pointer.h"
 #include "rdp_gdi.h"
+#include "rdp_cliprdr.h"
 
 /* Client plugin arguments */
 const char* GUAC_CLIENT_ARGS[] = {
@@ -384,7 +386,7 @@ int guac_client_init(guac_client* client, int argc, char** argv) {
     guac_client_data->rdp_inst = rdp_inst;
     guac_client_data->mouse_button_mask = 0;
     guac_client_data->current_surface = GUAC_DEFAULT_LAYER;
-    guac_client_data->clipboard = NULL;
+    guac_rdp_process_cliprdr_init(guac_client_data);
 
     /* Clear keysym state mapping and keymap */
     memset(guac_client_data->keysym_state, 0,

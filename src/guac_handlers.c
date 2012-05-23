@@ -21,6 +21,7 @@
  *
  * Contributor(s):
  * Matt Hortman
+ *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS - http://www.ulteo.com
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -434,10 +435,55 @@ int rdp_guac_client_key_handler(guac_client* client, int keysym, int pressed) {
 
 }
 
-int rdp_guac_client_clipboard_handler(guac_client* client, char* data) {
 
-    rdpChannels* channels = 
-        ((rdp_guac_client_data*) client->data)->rdp_inst->context->channels;
+char* decode_base64(char* data) {
+    static const char cd64[]="|$$$}rstuvwxyz{$$$$$$$>?@ABCDEFGHIJKLMNOPQRSTUVW$$$$$$XYZ[\\]^_`abcdefghijklmnopq";
+    int data_len = strlen(data);
+    char *output = malloc(data_len * 3 / 4);
+    unsigned char in[4], out[3], v;
+    int i, len;
+    int output_len = 0;
+
+    while ( data_len > 0 ) {
+        for( len = 0, i = 0; i < 4 && data_len > 0; i++ ) {
+            v = 0;
+            while( data_len > 0 && v == 0 ) {
+                v = (unsigned char) *data++;
+                data_len--;
+                v = (unsigned char) ((v < 43 || v > 122) ? 0 : cd64[ v - 43 ]);
+                if( v ) {
+                    v = (unsigned char) ((v == '$') ? 0 : v - 61);
+                }
+            }
+            if( data_len > 0 ) {
+                len++;
+                if( v ) {
+                    in[ i ] = (unsigned char) (v - 1);
+                }
+            }
+            else {
+                in[i] = 0;
+            }
+        }
+        if( len ) {
+            out[ 0 ] = (unsigned char ) (in[0] << 2 | in[1] >> 4);
+            out[ 1 ] = (unsigned char ) (in[1] << 4 | in[2] >> 2);
+            out[ 2 ] = (unsigned char ) (((in[2] << 6) & 0xc0) | in[3]);
+            for( i = 0; i < len - 1; i++ ) {
+                output[output_len++] = out[i];
+            }
+        }
+    }
+    output[output_len] = 0x00;
+    return output;
+}
+
+
+int rdp_guac_client_clipboard_handler(guac_client* client, char* data) {
+  
+    rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
+
+    rdpChannels* channels = client_data->rdp_inst->context->channels;
 
     RDP_CB_FORMAT_LIST_EVENT* format_list =
         (RDP_CB_FORMAT_LIST_EVENT*) freerdp_event_new(
@@ -446,14 +492,15 @@ int rdp_guac_client_clipboard_handler(guac_client* client, char* data) {
             NULL, NULL);
 
     /* Free existing data */
-    free(((rdp_guac_client_data*) client->data)->clipboard);
+    free(client_data->clipboard);
 
     /* Store data in client */
-    ((rdp_guac_client_data*) client->data)->clipboard = strdup(data);
+    client_data->clipboard = decode_base64(data);
+    client_data->clipboard_length = strlen(client_data->clipboard);
 
     /* Notify server that text data is now available */
     format_list->formats = (uint32*) malloc(sizeof(uint32));
-    format_list->formats[0] = CB_FORMAT_TEXT;
+    format_list->formats[0] = CB_FORMAT_UNICODETEXT;
     format_list->num_formats = 1;
 
     freerdp_channels_send_event(channels, (RDP_EVENT*) format_list);

@@ -20,6 +20,7 @@
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
+ *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS - http://www.ulteo.com
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -117,9 +118,13 @@ typedef struct rdp_guac_client_data {
     guac_rdp_keysym_state_map keysym_state;
 
     /**
-     * The current text (NOT Unicode) clipboard contents.
+     * The current Unicode (UTF-8) clipboard contents.
      */
     char* clipboard;
+    uint32* clipboard_formats;
+    int clipboard_num_formats;
+    uint32 clipboard_format;
+    ssize_t clipboard_length;
 
 } rdp_guac_client_data;
 
