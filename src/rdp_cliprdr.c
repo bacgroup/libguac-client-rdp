@@ -178,7 +178,7 @@ void guac_rdp_process_cb_data_request(guac_client* client,
         if (client_data->clipboard != NULL) {
             
             uniconv = freerdp_uniconv_new();
-            data_response->data = (char*)freerdp_uniconv_out(uniconv, client_data->clipboard, &out_size);
+            data_response->data = (uint8*)freerdp_uniconv_out(uniconv, client_data->clipboard, &out_size);
             data_response->size = out_size + 2;
             freerdp_uniconv_free(uniconv);
 
