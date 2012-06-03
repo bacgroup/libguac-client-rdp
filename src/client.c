@@ -113,6 +113,9 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     /* Load clipboard plugin */
     freerdp_channels_load_plugin(channels, instance->settings, "cliprdr", NULL);
 
+	/* Load rdpdr plugin (for printing) */
+	freerdp_channels_load_plugin(channels, instance->settings, "rdpdr", NULL);
+
     /* Init color conversion structure */
     clrconv = xnew(CLRCONV);
     clrconv->alpha = 1;
