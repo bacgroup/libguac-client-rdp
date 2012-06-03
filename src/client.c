@@ -68,6 +68,7 @@
 #include "rdp_pointer.h"
 #include "rdp_gdi.h"
 #include "rdp_cliprdr.h"
+#include "default_pointer.h"
 
 /* Client plugin arguments */
 const char* GUAC_CLIENT_ARGS[] = {
@@ -344,7 +345,6 @@ int guac_client_init(guac_client* client, int argc, char** argv) {
         settings->domain = strdup(argv[IDX_DOMAIN]);
 
     /* Username */
-    settings->username = "guest";
     if (argv[IDX_USERNAME][0] != '\0')
         settings->username = strdup(argv[IDX_USERNAME]);
 
@@ -435,6 +435,9 @@ int guac_client_init(guac_client* client, int argc, char** argv) {
 
     guac_client_data->trans_glyph_surface = cairo_image_surface_create(
             CAIRO_FORMAT_ARGB32, settings->width, settings->height);
+
+    /* Set default pointer */
+    guac_rdp_pointer_set_default(client);
 
     /* Success */
     return 0;

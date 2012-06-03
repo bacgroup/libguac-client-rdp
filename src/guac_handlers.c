@@ -20,8 +20,11 @@
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- * Matt Hortman
+ *  Matt Hortman
  *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS - http://www.ulteo.com
+ *  Jocelyn DELALANDE <j.delalande@ulteo.com> Ulteo SAS - http://www.ulteo.com
+ *
+ * Portions created by Ulteo SAS employees are Copyright (C) 2012 Ulteo SAS
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -64,7 +67,6 @@
 
 void __guac_rdp_update_keysyms(guac_client* client, const int* keysym_string, int from, int to);
 int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed);
-void __guac_rdp_send_altcode(guac_client* client, int altcode);
 
 
 int rdp_guac_client_free_handler(guac_client* client) {
@@ -278,48 +280,6 @@ int rdp_guac_client_mouse_handler(guac_client* client, int x, int y, int mask) {
     return 0;
 }
 
-void __guac_rdp_send_altcode(guac_client* client, int altcode) {
-
-    rdp_guac_client_data* guac_client_data = (rdp_guac_client_data*) client->data;
-    freerdp* rdp_inst = guac_client_data->rdp_inst;
-    int i;
-
-    /* Lookup scancode for Alt */
-    int alt = GUAC_RDP_KEYSYM_LOOKUP(
-            guac_client_data->keymap,
-            0xFFE9 /* Alt_L */).scancode;
-
-    /* Release all pressed modifiers */
-    __guac_rdp_update_keysyms(client, GUAC_KEYSYMS_ALL_MODIFIERS, 1, 0);
-
-    /* Press Alt */
-    rdp_inst->input->KeyboardEvent(rdp_inst->input, KBD_FLAGS_DOWN, alt);
-
-    /* For each character in four-digit Alt-code ... */
-    for (i=0; i<4; i++) {
-
-        /* Get scancode of keypad digit */
-        int scancode = GUAC_RDP_KEYSYM_LOOKUP(
-                guac_client_data->keymap,
-                0xFFB0 + (altcode / 1000)
-        ).scancode;
-
-        /* Press and release digit */
-        rdp_inst->input->KeyboardEvent(rdp_inst->input, KBD_FLAGS_DOWN, scancode);
-        rdp_inst->input->KeyboardEvent(rdp_inst->input, KBD_FLAGS_RELEASE, scancode);
-
-        /* Shift digits left by one place */
-        altcode = (altcode * 10) % 10000;
-
-    }
-
-    /* Release Alt */
-    rdp_inst->input->KeyboardEvent(rdp_inst->input, KBD_FLAGS_RELEASE, alt);
-
-    /* Press all originally pressed modifiers */
-    __guac_rdp_update_keysyms(client, GUAC_KEYSYMS_ALL_MODIFIERS, 1, 1);
-
-}
 
 int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
 
@@ -361,22 +321,41 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
             if (keysym_desc->clear_keysyms != NULL)
                 __guac_rdp_update_keysyms(client, keysym_desc->clear_keysyms, 1, 1);
 
-        } else {
-			/* Fall back to unicode events */
-			int unicode_code = keysym2uni(keysym);
-			//guac_client_log_info(client, "Translated keysym:0x%x to unicode:0x%x (pressed=%d flag=%d)", 
-			//					 keysym, unicode_code, pressed,	pressed ? KBD_FLAGS_DOWN : KBD_FLAGS_RELEASE);
+            return 0;
 
-			/* LibfreeRDP seems not to take into account the DOWN/RELEASE flags.
-			 *   So we send only the key once.
-			 */
-			if (pressed) {
-            rdp_inst->input->UnicodeKeyboardEvent(
-                    rdp_inst->input,
-					0,
-                    unicode_code);
-			} 
-		}
+        }
+    }
+
+    /* Fall back to unicode events if undefined inside current keymap */
+
+    /* Only send when key pressed - Unicode events do not have
+     * DOWN/RELEASE flags */
+    if (pressed) {
+
+        /* Translate keysym into codepoint */
+        int codepoint;
+        if (keysym <= 0xFF)
+            codepoint = keysym;
+        else if (keysym >= 0x1000000)
+            codepoint = keysym & 0xFFFFFF;
+        else {
+            guac_client_log_info(client,
+                    "Unmapped keysym has no equivalent unicode "
+                    "value: 0x%x", keysym);
+            return 0;
+        }
+
+        guac_client_log_info(client, "Translated keysym 0x%x to U+%04X",
+                keysym, codepoint);
+
+        /* Send Unicode event */
+        rdp_inst->input->UnicodeKeyboardEvent(
+                rdp_inst->input,
+                0, codepoint);
+    }
+    
+    else
+        guac_client_log_info(client, "Ignoring key release (Unicode event)");
 
     return 0;
 }

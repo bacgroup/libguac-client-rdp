@@ -38,8 +38,11 @@
 #ifndef _GUAC_RDP_RDP_KEYMAP_H
 #define _GUAC_RDP_RDP_KEYMAP_H
 
+#ifdef HAVE_FREERDP_LOCALE_KEYBOARD_H
 #include <freerdp/locale/keyboard.h>
-
+#else
+#include <freerdp/kbd/layouts.h>
+#endif
 
 /**
  * Represents a keysym-to-scancode mapping for RDP, with extra information
@@ -129,7 +132,8 @@ extern const guac_rdp_keymap guac_rdp_keymap_en_us;
 extern const guac_rdp_keymap guac_rdp_keymap_base;
 
 /**
- * Simple macro for referencing the mapped value of an altcode or scancode for a given keysym.
+ * Simple macro for referencing the mapped value of a scancode for a given
+ * keysym.
  */
 #define GUAC_RDP_KEYSYM_LOOKUP(keysym_mapping, keysym) ((keysym_mapping)[((keysym) & 0xFF00) >> 8][(keysym) & 0xFF])
 

@@ -43,6 +43,7 @@
 
 #include "client.h"
 #include "rdp_pointer.h"
+#include "default_pointer.h"
 
 void guac_rdp_pointer_new(rdpContext* context, rdpPointer* pointer) {
 
