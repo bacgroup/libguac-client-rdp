@@ -21,10 +21,11 @@
  *
  * Contributor(s):
  *  Matt Hortman
- *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS - http://www.ulteo.com
- *  Jocelyn DELALANDE <j.delalande@ulteo.com> Ulteo SAS - http://www.ulteo.com
+ *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS
+ *  Jocelyn DELALANDE <j.delalande@ulteo.com> Ulteo SAS
  *
- * Portions created by Ulteo SAS employees are Copyright (C) 2012 Ulteo SAS
+ * Contributions of Ulteo SAS Employees are 
+ *   Copyright (C) 2012 Ulteo SAS - http://www.ulteo.com
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -287,7 +288,7 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
     freerdp* rdp_inst = guac_client_data->rdp_inst;
 
     /* If keysym can be in lookup table */
-    //if (keysym <= 0xFFFF) {
+    if (keysym <= 0xFFFF) {
 
         /* Look up scancode mapping */
         const guac_rdp_keysym_desc* keysym_desc =
@@ -344,18 +345,20 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
             return 0;
         }
 
+		/*
         guac_client_log_info(client, "Translated keysym 0x%x to U+%04X",
                 keysym, codepoint);
+		//*/
 
         /* Send Unicode event */
         rdp_inst->input->UnicodeKeyboardEvent(
                 rdp_inst->input,
                 0, codepoint);
     }
-    
+    /*
     else
         guac_client_log_info(client, "Ignoring key release (Unicode event)");
-
+	//*/
     return 0;
 }
 

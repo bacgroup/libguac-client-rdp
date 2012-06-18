@@ -21,7 +21,11 @@
  *
  * Contributor(s):
  * Matt Hortman
- *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS - http://www.ulteo.com
+ *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS
+ *  Jocelyn DELALANDE <j.delalande@ulteo.com> Ulteo SAS 
+ *
+ * Contributions of Ulteo SAS Employees are 
+ *   Copyright (C) 2012 Ulteo SAS - http://www.ulteo.com
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -112,10 +116,15 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     CLRCONV* clrconv;
 
     /* Load clipboard plugin */
+    guac_client_log_info(client, "Loading clipboard support");
     freerdp_channels_load_plugin(channels, instance->settings, "cliprdr", NULL);
 
-	/* Load rdpdr plugin (for printing) */
-	freerdp_channels_load_plugin(channels, instance->settings, "rdpdr", NULL);
+	/* Load rdpdr plugin (for printing only) */
+    guac_client_log_info(client, "Loading printing support");
+	RDP_PLUGIN_DATA* rdpdr_data = xzalloc(sizeof(RDP_PLUGIN_DATA)*5); // Why 5 ? When to free
+	rdpdr_data[0].size = sizeof(RDP_PLUGIN_DATA);
+	rdpdr_data[0].data[0] = "printer";
+	freerdp_channels_load_plugin(channels, instance->settings, "rdpdr", rdpdr_data);
 
     /* Init color conversion structure */
     clrconv = xnew(CLRCONV);
@@ -215,6 +224,7 @@ boolean rdp_freerdp_post_connect(freerdp* instance) {
     client->key_handler = rdp_guac_client_key_handler;
     client->clipboard_handler = rdp_guac_client_clipboard_handler;
 
+	printf("Leaving post_connect\n");
     return true;
 
 }
