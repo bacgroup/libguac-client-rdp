@@ -162,7 +162,7 @@ void guac_rdp_process_cb_data_request(guac_client* client,
     UNICONV* uniconv;
     size_t out_size;
     char empty[] = "";
-    char* clip_data = &empty;
+    char* clip_data = empty;
 
     rdpChannels* channels = client_data->rdp_inst->context->channels;
 
@@ -181,7 +181,7 @@ void guac_rdp_process_cb_data_request(guac_client* client,
 
         /* Set data and length */
         uniconv = freerdp_uniconv_new();
-        data_response->data = (char*)freerdp_uniconv_out(uniconv, clip_data, &out_size);
+        data_response->data = (unsigned char*)freerdp_uniconv_out(uniconv, clip_data, &out_size);
         data_response->size = out_size + 2;
         freerdp_uniconv_free(uniconv);
 

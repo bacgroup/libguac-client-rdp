@@ -324,7 +324,6 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
             return 0;
 
         }
-    }
 
     /* Fall back to unicode events if undefined inside current keymap */
 
