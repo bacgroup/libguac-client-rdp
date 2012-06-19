@@ -21,6 +21,7 @@
  *
  * Contributor(s):
  *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS - http://www.ulteo.com
+ *  David LECHEVALIER <david@ulteo.com> Ulteo SAS - http://www.ulteo.com - 2012
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -50,10 +51,9 @@
 
 void guac_rdp_process_cliprdr_init(rdp_guac_client_data* client_data) {
   
-    client_data->clipboard_num_formats = 2;  
+    client_data->clipboard_num_formats = 1;
     client_data->clipboard_formats = (uint32*) malloc(sizeof(uint32)*client_data->clipboard_num_formats);
     client_data->clipboard_formats[0] = CB_FORMAT_UNICODETEXT;
-    client_data->clipboard_formats[1] = CB_FORMAT_TEXT;
     client_data->clipboard = NULL;
 
 }
@@ -161,6 +161,8 @@ void guac_rdp_process_cb_data_request(guac_client* client,
     rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
     UNICONV* uniconv;
     size_t out_size;
+    char empty[] = "";
+    char* clip_data = &empty;
 
     rdpChannels* channels = client_data->rdp_inst->context->channels;
 
@@ -174,20 +176,14 @@ void guac_rdp_process_cb_data_request(guac_client* client,
                     RDP_EVENT_TYPE_CB_DATA_RESPONSE,
                     NULL, NULL);
 
-        /* Set data and length */
-        if (client_data->clipboard != NULL) {
-            
-            uniconv = freerdp_uniconv_new();
-            data_response->data = (uint8*)freerdp_uniconv_out(uniconv, client_data->clipboard, &out_size);
-            data_response->size = out_size + 2;
-            freerdp_uniconv_free(uniconv);
+        if (client_data->clipboard != NULL)
+            clip_data = client_data->clipboard;
 
-        }
-        else {
-            data_response->data = (uint8*) strdup("");
-            data_response->size = 1;
-            client_data->clipboard_format = event->format;
-        }
+        /* Set data and length */
+        uniconv = freerdp_uniconv_new();
+        data_response->data = (char*)freerdp_uniconv_out(uniconv, clip_data, &out_size);
+        data_response->size = out_size + 2;
+        freerdp_uniconv_free(uniconv);
 
         /* Send response */
         freerdp_channels_send_event(channels, (RDP_EVENT*) data_response);
