@@ -130,6 +130,9 @@ int rdp_guac_client_handle_messages(guac_client* client) {
         return 1;
     }
 
+	/* Adds Ulteo-printing notification FD */
+	read_fds[read_count++] = &(guac_client_data->printjob_notif_fifo);
+
     /* Construct read fd_set */
     max_fd = 0;
     FD_ZERO(&rfds);
@@ -157,7 +160,8 @@ int rdp_guac_client_handle_messages(guac_client* client) {
     }
 
     /* Otherwise, wait for file descriptors given */
-    if (select(max_fd + 1, &rfds, &wfds, NULL, &timeout) == -1) {
+	fd = select(max_fd + 1, &rfds, &wfds, NULL, &timeout);
+    if (fd  == -1) {
         /* these are not really errors */
         if (!((errno == EAGAIN) ||
             (errno == EWOULDBLOCK) ||
@@ -187,14 +191,17 @@ int rdp_guac_client_handle_messages(guac_client* client) {
     /* Check for channel events */
     event = freerdp_channels_pop_event(channels);
     if (event) {
-
+		printf("[2] EVENT IIIIIIIIIIIIIIIIIIIIS%d", (int)(event));
         /* Handle clipboard events */
         if (event->event_class == RDP_EVENT_CLASS_CLIPRDR)
             guac_rdp_process_cliprdr_event(client, event);
-
         freerdp_event_free(event);
 
     }
+
+	/* Handle PDF Printjob availability message */
+	if (fd == guac_client_data->printjob_notif_fifo) {
+	}
 
     /* Handle RDP disconnect */
     if (freerdp_shall_disconnect(rdp_inst)) {
@@ -325,7 +332,7 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
             return 0;
 
         }
-
+	}
     /* Fall back to unicode events if undefined inside current keymap */
 
     /* Only send when key pressed - Unicode events do not have

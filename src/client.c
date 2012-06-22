@@ -45,7 +45,10 @@
 #include <string.h>
 
 #include <sys/select.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include <freerdp/freerdp.h>
 #include <freerdp/utils/memory.h>
@@ -60,7 +63,6 @@
 #include <freerdp/constants.h>
 
 #include <guacamole/socket.h>
-#include <guacamole/protocol.h>
 #include <guacamole/client.h>
 #include <guacamole/error.h>
 
@@ -72,6 +74,7 @@
 #include "rdp_pointer.h"
 #include "rdp_gdi.h"
 #include "rdp_cliprdr.h"
+#include "rdp_printrdr.h"
 #include "default_pointer.h"
 
 /* Client plugin arguments */
@@ -100,12 +103,18 @@ enum ARGS_IDX {
     IDX_COLOR_DEPTH
 };
 
+
+
+
 int __guac_receive_channel_data(freerdp* rdp_inst, int channelId, uint8* data, int size, int flags, int total_size) {
+    printf("WWWWWWWWWWWWWWWWWWW data in chan size : %d\n", size);
+	printf("RECUR 1\n");
+
+	printf("EVT class %d EVT type %d\n",((RDP_EVENT*)(data))->event_class, ((RDP_EVENT*)(data))->event_type);
     return freerdp_channels_data(rdp_inst, channelId, data, size, flags, total_size);
 }
 
 boolean rdp_freerdp_pre_connect(freerdp* instance) {
-
     rdpContext* context = instance->context;
     guac_client* client = ((rdp_freerdp_context*) context)->client;
     rdpChannels* channels = context->channels;
@@ -120,11 +129,28 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     freerdp_channels_load_plugin(channels, instance->settings, "cliprdr", NULL);
 
 	/* Load rdpdr plugin (for printing only) */
-    guac_client_log_info(client, "Loading printing support");
+
+	if (guac_rdp_prepare_ulteo_printing(instance,
+										&(((rdp_guac_client_data*)client->data)->printjob_notif_fifo))
+		!= 0) {
+
+        guac_protocol_send_error(client->socket, "Error initializing ulteo printing");
+        guac_socket_flush(client->socket);
+		return false;
+	}
+
+    guac_client_log_info(client, "Loading printing support, will use %s");
 	RDP_PLUGIN_DATA* rdpdr_data = xzalloc(sizeof(RDP_PLUGIN_DATA)*5); // Why 5 ? When to free
 	rdpdr_data[0].size = sizeof(RDP_PLUGIN_DATA);
 	rdpdr_data[0].data[0] = "printer";
 	freerdp_channels_load_plugin(channels, instance->settings, "rdpdr", rdpdr_data);
+    /* guac_client_log_info(client, "There are %s channels", channels->num_channel_data); */
+
+	/* int i = 0; */
+	/* while (i < channels->num_channel_data) { */
+	/* 	guac_client_log_info(client, "Channel %d : %s", channels[i].name); */
+	/* 	i++; */
+	/* } */
 
     /* Init color conversion structure */
     clrconv = xnew(CLRCONV);
