@@ -149,18 +149,34 @@ int guac_rdp_prepare_ulteo_printing(freerdp* instance, // in args
 
 	return 0;
 }
+
+
+/**
+ * Transform a local filename into an URL to fetch the URL.
+ */
+void job_path_to_url(char* job_url,  const char * job_path) {
+	// URL example : "/printer/job/2/get\n"
+	// Base URL
+	strcpy(job_url, "/printer/job/");
+	// Append the job ID
+	strcat(job_url, rindex(job_path, '/'));
+	// Remove the '.pdf'
+	*(rindex(job_url, '.')) = '\0';
+	// Append '/get'
+	strcat(job_url, "/get");
+}
+
+
 void guac_rdp_process_printing_notification(guac_client* client, int fd) {
 	char pdf_filename[MAX_PDF_PRINTJOB_NAME_LEN];
 	char pdf_url[MAX_PDF_PRINTJOB_NAME_LEN];
 
 	if (read(fd, pdf_filename, MAX_PDF_PRINTJOB_NAME_LEN) <= 0) {
 		guac_client_log_info(client, "Read 0 bytes from FIFO...");
+		return;
 	}
 
-	guac_protocol_send_pdf_printjob_notif(client->socket, pdf_filename);
-
-	//TODO: make it appear
-	snprintf(pdf_url, MAX_PDF_PRINTJOB_NAME_LEN, GUAC_PDF_PRINTER_JOB_URL, pdf_filename);
-
-	guac_client_log_info(client, "Sending printing notification to client (%s)", pdf_filename);
+	job_path_to_url(pdf_url, pdf_filename);
+	guac_client_log_info(client, "Sending printing notification to client (%s)", pdf_url);
+	guac_protocol_send_pdf_printjob_notif(client->socket, pdf_url);
 }

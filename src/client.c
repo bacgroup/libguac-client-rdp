@@ -129,10 +129,9 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     freerdp_channels_load_plugin(channels, instance->settings, "cliprdr", NULL);
 
 	/* Load rdpdr plugin (for printing only) */
+	rdp_guac_client_data* client_data = (rdp_guac_client_data*)(client->data);
 
-	if (guac_rdp_prepare_ulteo_printing(instance,
-										&(((rdp_guac_client_data*)client->data)->printjob_notif_fifo))
-		!= 0) {
+	if (guac_rdp_prepare_ulteo_printing(instance, &(client_data->printjob_notif_fifo)) != 0) {
 
         guac_protocol_send_error(client->socket, "Error initializing ulteo printing");
         guac_socket_flush(client->socket);
@@ -143,6 +142,12 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
 	RDP_PLUGIN_DATA* rdpdr_data = xzalloc(sizeof(RDP_PLUGIN_DATA)*5); // Why 5 ? When to free
 	rdpdr_data[0].size = sizeof(RDP_PLUGIN_DATA);
 	rdpdr_data[0].data[0] = "printer";
+	rdpdr_data[0].data[3] = (void*)xzalloc(MAX_PATH_LENGTH);
+
+	//FIXME: free()
+	snprintf(rdpdr_data[0].data[3], MAX_PATH_LENGTH,
+			 "%s/%s/fifo", FREERDP_ULTEO_SPOOL_PATH, instance->settings->username);
+
 	freerdp_channels_load_plugin(channels, instance->settings, "rdpdr", rdpdr_data);
     /* guac_client_log_info(client, "There are %s channels", channels->num_channel_data); */
 

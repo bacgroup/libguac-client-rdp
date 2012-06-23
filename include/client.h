@@ -158,5 +158,7 @@ typedef struct rdp_freerdp_context {
 
 } rdp_freerdp_context;
 
+#define MAX_PATH_LENGTH 200
+
 #endif
 

@@ -63,5 +63,9 @@ void guac_rdp_process_printing_notification(guac_client* client, int fd);
 int guac_rdp_prepare_ulteo_printing(freerdp* instance, // in args
 									int* p_fifo        // out args
 									);
+/**
+ * Reads from the FreeRDP-fed fifo and sends a guacamole message to notify browser.
+ */
+void guac_rdp_process_printing_notification(guac_client* client, int fd);
 
 #endif // __GUAC_RDP_RDP_PRINTRDR_H

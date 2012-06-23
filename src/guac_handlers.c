@@ -63,6 +63,7 @@
 #include "client.h"
 #include "rdp_keymap.h"
 #include "rdp_cliprdr.h"
+#include "rdp_printrdr.h"
 #include "guac_handlers.h"
 #include "unicode_convtable.h"
 
@@ -98,12 +99,13 @@ int rdp_guac_client_free_handler(guac_client* client) {
 
 int rdp_guac_client_handle_messages(guac_client* client) {
 
-    rdp_guac_client_data* guac_client_data = (rdp_guac_client_data*) client->data;
+    rdp_guac_client_data* guac_client_data = ((rdp_guac_client_data*)(client->data));
     freerdp* rdp_inst = guac_client_data->rdp_inst;
     rdpChannels* channels = rdp_inst->context->channels;
 
     int index;
     int max_fd, fd;
+	// Actualy stores file-descriptors, not pointers
     void* read_fds[32];
     void* write_fds[32];
     int read_count = 0;
@@ -130,9 +132,6 @@ int rdp_guac_client_handle_messages(guac_client* client) {
         return 1;
     }
 
-	/* Adds Ulteo-printing notification FD */
-	read_fds[read_count++] = &(guac_client_data->printjob_notif_fifo);
-
     /* Construct read fd_set */
     max_fd = 0;
     FD_ZERO(&rfds);
@@ -142,6 +141,13 @@ int rdp_guac_client_handle_messages(guac_client* client) {
             max_fd = fd;
         FD_SET(fd, &rfds);
     }
+
+	/* Adds Ulteo-printing notification FD */
+	fd = (int)(long) (guac_client_data->printjob_notif_fifo);
+	if (fd > max_fd)
+		max_fd = fd;
+	
+	FD_SET(fd, &rfds);
 
     /* Construct write fd_set */
     FD_ZERO(&wfds);
@@ -161,6 +167,7 @@ int rdp_guac_client_handle_messages(guac_client* client) {
 
     /* Otherwise, wait for file descriptors given */
 	fd = select(max_fd + 1, &rfds, &wfds, NULL, &timeout);
+
     if (fd  == -1) {
         /* these are not really errors */
         if (!((errno == EAGAIN) ||
@@ -191,7 +198,6 @@ int rdp_guac_client_handle_messages(guac_client* client) {
     /* Check for channel events */
     event = freerdp_channels_pop_event(channels);
     if (event) {
-		printf("[2] EVENT IIIIIIIIIIIIIIIIIIIIS%d", (int)(event));
         /* Handle clipboard events */
         if (event->event_class == RDP_EVENT_CLASS_CLIPRDR)
             guac_rdp_process_cliprdr_event(client, event);
@@ -199,16 +205,18 @@ int rdp_guac_client_handle_messages(guac_client* client) {
 
     }
 
-	/* Handle PDF Printjob availability message */
-	if (fd == guac_client_data->printjob_notif_fifo) {
-	}
-
     /* Handle RDP disconnect */
     if (freerdp_shall_disconnect(rdp_inst)) {
         guac_error = GUAC_STATUS_NO_INPUT;
         guac_error_message = "RDP server closed connection";
         return 1;
     }
+
+	/* Handle PDF Printjob availability message */
+	if (FD_ISSET(guac_client_data->printjob_notif_fifo, &rfds)) {
+		guac_rdp_process_printing_notification(client, guac_client_data->printjob_notif_fifo);
+		guac_client_log_info(client, "processed");
+	}
 
     /* Success */
     return 0;
