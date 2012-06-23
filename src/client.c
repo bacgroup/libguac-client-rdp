@@ -107,10 +107,6 @@ enum ARGS_IDX {
 
 
 int __guac_receive_channel_data(freerdp* rdp_inst, int channelId, uint8* data, int size, int flags, int total_size) {
-    printf("WWWWWWWWWWWWWWWWWWW data in chan size : %d\n", size);
-	printf("RECUR 1\n");
-
-	printf("EVT class %d EVT type %d\n",((RDP_EVENT*)(data))->event_class, ((RDP_EVENT*)(data))->event_type);
     return freerdp_channels_data(rdp_inst, channelId, data, size, flags, total_size);
 }
 
@@ -132,7 +128,6 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
 	rdp_guac_client_data* client_data = (rdp_guac_client_data*)(client->data);
 
 	if (guac_rdp_prepare_ulteo_printing(instance, &(client_data->printjob_notif_fifo)) != 0) {
-
         guac_protocol_send_error(client->socket, "Error initializing ulteo printing");
         guac_socket_flush(client->socket);
 		return false;
@@ -149,13 +144,6 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
 			 "%s/%s/fifo", FREERDP_ULTEO_SPOOL_PATH, instance->settings->username);
 
 	freerdp_channels_load_plugin(channels, instance->settings, "rdpdr", rdpdr_data);
-    /* guac_client_log_info(client, "There are %s channels", channels->num_channel_data); */
-
-	/* int i = 0; */
-	/* while (i < channels->num_channel_data) { */
-	/* 	guac_client_log_info(client, "Channel %d : %s", channels[i].name); */
-	/* 	i++; */
-	/* } */
 
     /* Init color conversion structure */
     clrconv = xnew(CLRCONV);
@@ -254,8 +242,6 @@ boolean rdp_freerdp_post_connect(freerdp* instance) {
     client->mouse_handler = rdp_guac_client_mouse_handler;
     client->key_handler = rdp_guac_client_key_handler;
     client->clipboard_handler = rdp_guac_client_clipboard_handler;
-
-	printf("Leaving post_connect\n");
     return true;
 
 }
