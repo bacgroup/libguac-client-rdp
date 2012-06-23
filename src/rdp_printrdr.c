@@ -125,7 +125,7 @@ int guac_rdp_prepare_ulteo_printing(freerdp* instance, // in args
 	guac_client_log_info(client, "Preparing printing support, will spool on FIFO %s", 
 						 spool_fifo);
 
-	if (mkdir(session_spool_path, S_IRWXU)) {
+	if (mkdir(session_spool_path, 0755)) {
 		if (errno == EEXIST) {
 			rmrf(session_spool_path);
 			mkdir(session_spool_path, S_IRWXU);
