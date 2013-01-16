@@ -77,6 +77,7 @@
 #include "rdp_cliprdr.h"
 #include "rdp_printrdr.h"
 #include "rdp_keyboard_status.h"
+#include "rdp_seamrdp.h"
 #include "default_pointer.h"
 
 /* Client plugin arguments */
@@ -126,6 +127,10 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     /* Load clipboard plugin */
     guac_client_log_info(client, "Loading clipboard support");
     freerdp_channels_load_plugin(channels, instance->settings, "cliprdr", NULL);
+
+    /* Load seamrdp plugin */
+    guac_client_log_info(client, "Loading seamless support");
+    freerdp_channels_load_plugin(channels, instance->settings, "seamrdp", NULL);
 
 	/* Load rdpdr plugin (for printing only) */
 	rdp_guac_client_data* client_data = (rdp_guac_client_data*)(client->data);
@@ -248,6 +253,7 @@ boolean rdp_freerdp_post_connect(freerdp* instance) {
     client->mouse_handler = rdp_guac_client_mouse_handler;
     client->key_handler = rdp_guac_client_key_handler;
     client->clipboard_handler = rdp_guac_client_clipboard_handler;
+    client->seamrdp_handler = rdp_guac_client_seamrdp_handler;
     return true;
 
 }
