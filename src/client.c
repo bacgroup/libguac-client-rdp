@@ -78,6 +78,7 @@
 #include "rdp_printrdr.h"
 #include "rdp_keyboard_status.h"
 #include "rdp_seamrdp.h"
+#include "rdp_ovdapp.h"
 #include "default_pointer.h"
 
 /* Client plugin arguments */
@@ -131,6 +132,10 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     /* Load seamrdp plugin */
     guac_client_log_info(client, "Loading seamless support");
     freerdp_channels_load_plugin(channels, instance->settings, "seamrdp", NULL);
+
+    /* Load ovdapp plugin */
+    guac_client_log_info(client, "Loading ovdapp support");
+    freerdp_channels_load_plugin(channels, instance->settings, "ovdapp", NULL);
 
 	/* Load rdpdr plugin (for printing only) */
 	rdp_guac_client_data* client_data = (rdp_guac_client_data*)(client->data);
@@ -254,6 +259,7 @@ boolean rdp_freerdp_post_connect(freerdp* instance) {
     client->key_handler = rdp_guac_client_key_handler;
     client->clipboard_handler = rdp_guac_client_clipboard_handler;
     client->seamrdp_handler = rdp_guac_client_seamrdp_handler;
+    client->ovdapp_handler = rdp_guac_client_ovdapp_handler;
     return true;
 
 }

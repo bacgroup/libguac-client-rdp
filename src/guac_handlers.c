@@ -67,6 +67,7 @@
 #include "rdp_cliprdr.h"
 #include "rdp_printrdr.h"
 #include "rdp_seamrdp.h"
+#include "rdp_ovdapp.h"
 #include "guac_handlers.h"
 #include "unicode_convtable.h"
 
@@ -206,6 +207,8 @@ int rdp_guac_client_handle_messages(guac_client* client) {
             guac_rdp_process_cliprdr_event(client, event);
         if (event->event_class == RDP_EVENT_CLASS_SEAMRDP)
 						guac_rdp_process_seamrdp_event(client, event);
+				if (event->event_class == RDP_EVENT_CLASS_OVDAPP)
+						guac_rdp_process_ovdapp_event(client, event);
         freerdp_event_free(event);
 
     }
@@ -475,6 +478,28 @@ int rdp_guac_client_seamrdp_handler(guac_client* client, char* data) {
 	printf("%s\n", buffer);
 
 	event->event_class = RDP_EVENT_CLASS_SEAMRDP;
+	event->event_type = 0;
+	event->on_event_free_callback = NULL;
+	event->user_data = buffer;
+
+	freerdp_channels_send_event(channels, (RDP_EVENT*) event);
+	return 0;
+}
+
+int rdp_guac_client_ovdapp_handler(guac_client* client, char* data) {
+	rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
+	rdpChannels* channels = client_data->rdp_inst->context->channels;
+	RDP_EVENT* event = xnew(RDP_EVENT);
+	int bufferLength;
+	char *buffer;
+
+	bufferLength = strlen(data);
+	buffer = malloc(bufferLength+1);
+	strcpy(buffer, data);
+
+	printf("%s\n", buffer);
+
+	event->event_class = RDP_EVENT_CLASS_OVDAPP;
 	event->event_type = 0;
 	event->on_event_free_callback = NULL;
 	event->user_data = buffer;

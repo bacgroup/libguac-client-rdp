@@ -46,6 +46,7 @@ int rdp_guac_client_mouse_handler(guac_client* client, int x, int y, int mask);
 int rdp_guac_client_key_handler(guac_client* client, int keysym, int pressed);
 int rdp_guac_client_clipboard_handler(guac_client* client, char* data);
 int rdp_guac_client_seamrdp_handler(guac_client* client, char* data);
+int rdp_guac_client_ovdapp_handler(guac_client* client, char* data);
 
 #endif
 
