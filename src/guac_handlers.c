@@ -410,46 +410,34 @@ int rdp_guac_client_key_handler(guac_client* client, int keysym, int pressed) {
 
 }
 
+static char reverseCode(char c) {
+    if (c >= 'A' && c <= 'Z') return (c-'A');
+    if (c >= 'a' && c <= 'z') return (c-'a')+26;
+    if (c >= '0' && c <= '9') return (c-'0')+52;
+    if (c == '+') return 62;
+    if (c == '/') return 63;
+    return 0;
+}
 
 char* decode_base64(char* data) {
-    static const char cd64[]="|$$$}rstuvwxyz{$$$$$$$>?@ABCDEFGHIJKLMNOPQRSTUVW$$$$$$XYZ[\\]^_`abcdefghijklmnopq";
+    char buffer[4];
+    int offset;
     int data_len = strlen(data);
-    char *output = malloc(data_len * 3 / 4);
-    unsigned char in[4], out[3], v;
-    int i, len;
-    int output_len = 0;
+    char *output = malloc((data_len*3/4)+1);
 
-    while ( data_len > 0 ) {
-        for( len = 0, i = 0; i < 4 && data_len > 0; i++ ) {
-            v = 0;
-            while( data_len > 0 && v == 0 ) {
-                v = (unsigned char) *data++;
-                data_len--;
-                v = (unsigned char) ((v < 43 || v > 122) ? 0 : cd64[ v - 43 ]);
-                if( v ) {
-                    v = (unsigned char) ((v == '$') ? 0 : v - 61);
-                }
-            }
-            if( data_len > 0 ) {
-                len++;
-                if( v ) {
-                    in[ i ] = (unsigned char) (v - 1);
-                }
-            }
-            else {
-                in[i] = 0;
-            }
-        }
-        if( len ) {
-            out[ 0 ] = (unsigned char ) (in[0] << 2 | in[1] >> 4);
-            out[ 1 ] = (unsigned char ) (in[1] << 4 | in[2] >> 2);
-            out[ 2 ] = (unsigned char ) (((in[2] << 6) & 0xc0) | in[3]);
-            for( i = 0; i < len - 1; i++ ) {
-                output[output_len++] = out[i];
-            }
-        }
+    for (offset=0 ; offset < data_len ; offset+=4) {
+        int base = offset*3/4;
+        buffer[0] = reverseCode(data[offset+0]);
+        buffer[1] = reverseCode(data[offset+1]);
+        buffer[2] = reverseCode(data[offset+2]);
+        buffer[3] = reverseCode(data[offset+3]);
+
+        output[base+0] = (buffer[0] << 2) | (((buffer[1] & 0x30) >> 4) & 0x03);
+        output[base+1] = ((buffer[1] & 0x0F) << 4) | (((buffer[2] & 0x3C) >> 2) & 0x0F);
+        output[base+2] = ((buffer[2] & 0x03) << 6) | buffer[3];
     }
-    output[output_len] = 0x00;
+
+    output[data_len*3/4]='\0';
     return output;
 }
 
