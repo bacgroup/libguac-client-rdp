@@ -23,6 +23,7 @@
  *  Matt Hortman
  *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS
  *  Jocelyn DELALANDE <j.delalande@ulteo.com> Ulteo SAS
+ *  Alexandre CONFIANT-LATOUR <a.confiant@ulteo.com> Ulteo SAS
  *
  * Contributions of Ulteo SAS Employees are 
  *   Copyright (C) 2012 Ulteo SAS - http://www.ulteo.com
@@ -377,6 +378,15 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
     return 0;
 }
 
+int __guac_rdp_send_unicode(guac_client* client, int unicode) {
+    rdp_guac_client_data* guac_client_data = (rdp_guac_client_data*) client->data;
+    freerdp* rdp_inst = guac_client_data->rdp_inst;
+
+    /* Send Unicode event */
+    rdp_inst->input->UnicodeKeyboardEvent(rdp_inst->input, 0, unicode);
+    return 0;
+}
+
 void __guac_rdp_update_keysyms(guac_client* client, const int* keysym_string, int from, int to) {
 
     rdp_guac_client_data* guac_client_data = (rdp_guac_client_data*) client->data;
@@ -403,11 +413,17 @@ int rdp_guac_client_key_handler(guac_client* client, int keysym, int pressed) {
 
     rdp_guac_client_data* guac_client_data = (rdp_guac_client_data*) client->data;
 
-    /* Update keysym state */
-    GUAC_RDP_KEYSYM_LOOKUP(guac_client_data->keysym_state, keysym) = pressed;
-
-    return __guac_rdp_send_keysym(client, keysym, pressed);
-
+    switch(pressed) {
+        case 0:
+        case 1:
+            /* Update keysym state */
+            GUAC_RDP_KEYSYM_LOOKUP(guac_client_data->keysym_state, keysym) = pressed;
+            return __guac_rdp_send_keysym(client, keysym, pressed);
+        case 2:
+            /* Send unicode symbol */
+            return __guac_rdp_send_unicode(client, keysym);
+    }
+    return 0;
 }
 
 static char reverseCode(char c) {
