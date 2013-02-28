@@ -23,6 +23,7 @@
  * Matt Hortman
  *  David PHAM-VAN <d.pham-van@ulteo.com> Ulteo SAS
  *  Jocelyn DELALANDE <j.delalande@ulteo.com> Ulteo SAS 
+ *  Alexandre CONFIANT-LATOUR <a.confiant@ulteo.com> Ulteo SAS
  *
  * Contributions of Ulteo SAS Employees are 
  *   Copyright (C) 2012 Ulteo SAS - http://www.ulteo.com
@@ -75,6 +76,7 @@
 #include "rdp_gdi.h"
 #include "rdp_cliprdr.h"
 #include "rdp_printrdr.h"
+#include "rdp_keyboard_status.h"
 #include "default_pointer.h"
 
 /* Client plugin arguments */
@@ -114,6 +116,7 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     rdpContext* context = instance->context;
     guac_client* client = ((rdp_freerdp_context*) context)->client;
     rdpChannels* channels = context->channels;
+    rdpInput *input = instance->input;
     rdpBitmap* bitmap;
     rdpGlyph* glyph;
     rdpPointer* pointer;
@@ -211,6 +214,9 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     bitmap_cache_register_callbacks(instance->update);
     offscreen_cache_register_callbacks(instance->update);
     palette_cache_register_callbacks(instance->update);
+
+    /* Set up IME status handler */
+    input->KeyboardImeStatusEvent = guac_rdp_keyboard_ime_state;
 
     /* Init channels (pre-connect) */
     if (freerdp_channels_pre_connect(channels, instance)) {

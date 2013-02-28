@@ -47,6 +47,7 @@ libguac_client_rdp_la_SOURCES = src/client.c src/rdp_bitmap.c src/rdp_glyph.c sr
 				 src/rdp_keymap.c \
 				 src/rdp_keymap_base.c \
 				 src/rdp_keymap_en_us.c \
+				 src/rdp_keyboard_status.c \
 				 src/default_pointer.c
 
 noinst_HEADERS =              \
@@ -59,6 +60,7 @@ noinst_HEADERS =              \
 	include/rdp_gdi.h         \
 	include/rdp_glyph.h       \
 	include/rdp_keymap.h      \
+	include/rdp_keyboard_status.h \
 	include/rdp_pointer.h
 
 libguac_client_rdp_la_LDFLAGS = -version-info 0:0:0
