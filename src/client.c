@@ -146,7 +146,6 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
 		return false;
 	}
 
-    guac_client_log_info(client, "Loading printing support, will use %s");
 	RDP_PLUGIN_DATA* rdpdr_data = xzalloc(sizeof(RDP_PLUGIN_DATA)*5); // Why 5 ? When to free
 	rdpdr_data[0].size = sizeof(RDP_PLUGIN_DATA);
 	rdpdr_data[0].data[0] = "printer";
