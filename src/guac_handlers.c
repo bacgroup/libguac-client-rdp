@@ -475,7 +475,7 @@ int rdp_guac_client_seamrdp_handler(guac_client* client, char* data) {
 	buffer = malloc(bufferLength+1);
 	strcpy(buffer, data);
 
-	printf("%s\n", buffer);
+	/*printf("%s\n", buffer);*/
 
 	event->event_class = RDP_EVENT_CLASS_SEAMRDP;
 	event->event_type = 0;
@@ -497,7 +497,7 @@ int rdp_guac_client_ovdapp_handler(guac_client* client, char* data) {
 	buffer = malloc(bufferLength+1);
 	strcpy(buffer, data);
 
-	printf("%s\n", buffer);
+	/*printf("%s\n", buffer);*/
 
 	event->event_class = RDP_EVENT_CLASS_OVDAPP;
 	event->event_type = 0;

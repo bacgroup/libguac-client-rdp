@@ -91,7 +91,7 @@ void guac_rdp_process_seamrdp_event(guac_client* client, RDP_EVENT* event) {
 	output[strlen(output)-1] = ';';
 
 	guac_socket_write_string(client->socket, output);
-	printf("%s\n", output);
+	/*printf("%s\n", output);*/
 	free(fields);
 	free(output);
 }

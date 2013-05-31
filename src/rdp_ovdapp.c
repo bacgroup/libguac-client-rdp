@@ -50,6 +50,6 @@ void guac_rdp_process_ovdapp_event(guac_client* client, RDP_EVENT* event) {
 	snprintf(output, outputLength+1, "6.ovdapp,%d.%s;", inputLength, input);
 
 	guac_socket_write_string(client->socket, output);
-	printf("%s\n", output);
+	/*printf("%s\n", output);*/
 	free(output);
 }
