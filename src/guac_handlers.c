@@ -480,7 +480,7 @@ int rdp_guac_client_seamrdp_handler(guac_client* client, char* data) {
 	event->event_class = RDP_EVENT_CLASS_SEAMRDP;
 	event->event_type = 0;
 	event->on_event_free_callback = NULL;
-	event->user_data = buffer;
+	event->user_data = decode_base64(data);;
 
 	freerdp_channels_send_event(channels, (RDP_EVENT*) event);
 	return 0;
