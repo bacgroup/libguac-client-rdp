@@ -128,7 +128,7 @@ int guac_rdp_prepare_ulteo_printing(freerdp* instance, // in args
 	if (mkdir(session_spool_path, 0755)) {
 		if (errno == EEXIST) {
 			rmrf(session_spool_path);
-			mkdir(session_spool_path, S_IRWXU);
+			mkdir(session_spool_path, 0755);
 		} else {
 			perror("Cannot create session spool dir: ");
 			return -1;
