@@ -84,9 +84,9 @@ int rdp_guac_client_free_handler(guac_client* client) {
     rdpChannels* channels = rdp_inst->context->channels;
 
     /* Clean up RDP client */
-	freerdp_channels_close(channels, rdp_inst);
-	freerdp_channels_free(channels);
-	freerdp_disconnect(rdp_inst);
+    freerdp_channels_close(channels, rdp_inst);
+    freerdp_channels_free(channels);
+    freerdp_disconnect(rdp_inst);
     freerdp_clrconv_free(((rdp_freerdp_context*) rdp_inst->context)->clrconv);
     cache_free(rdp_inst->context->cache);
     freerdp_free(rdp_inst);
@@ -109,7 +109,6 @@ int rdp_guac_client_handle_messages(guac_client* client) {
 
     int index;
     int max_fd, fd;
-	// Actualy stores file-descriptors, not pointers
     void* read_fds[32];
     void* write_fds[32];
     int read_count = 0;
@@ -146,12 +145,11 @@ int rdp_guac_client_handle_messages(guac_client* client) {
         FD_SET(fd, &rfds);
     }
 
-	/* Adds Ulteo-printing notification FD */
-	fd = (int)(long) (guac_client_data->printjob_notif_fifo);
-	if (fd > max_fd)
-		max_fd = fd;
-	
-	FD_SET(fd, &rfds);
+    /* Adds Ulteo-printing notification FD */
+    fd = (int)(long) (guac_client_data->printjob_notif_fifo);
+    if (fd > max_fd)
+        max_fd = fd;
+    FD_SET(fd, &rfds);
 
     /* Construct write fd_set */
     FD_ZERO(&wfds);
@@ -170,7 +168,7 @@ int rdp_guac_client_handle_messages(guac_client* client) {
     }
 
     /* Otherwise, wait for file descriptors given */
-	fd = select(max_fd + 1, &rfds, &wfds, NULL, &timeout);
+    fd = select(max_fd + 1, &rfds, &wfds, NULL, &timeout);
 
     if (fd  == -1) {
         /* these are not really errors */
@@ -206,9 +204,9 @@ int rdp_guac_client_handle_messages(guac_client* client) {
         if (event->event_class == RDP_EVENT_CLASS_CLIPRDR)
             guac_rdp_process_cliprdr_event(client, event);
         if (event->event_class == RDP_EVENT_CLASS_SEAMRDP)
-						guac_rdp_process_seamrdp_event(client, event);
-				if (event->event_class == RDP_EVENT_CLASS_OVDAPP)
-						guac_rdp_process_ovdapp_event(client, event);
+            guac_rdp_process_seamrdp_event(client, event);
+        if (event->event_class == RDP_EVENT_CLASS_OVDAPP)
+            guac_rdp_process_ovdapp_event(client, event);
         freerdp_event_free(event);
 
     }
@@ -220,11 +218,11 @@ int rdp_guac_client_handle_messages(guac_client* client) {
         return 1;
     }
 
-	/* Handle PDF Printjob availability message */
-	if (FD_ISSET(guac_client_data->printjob_notif_fifo, &rfds)) {
-		guac_rdp_process_printing_notification(client, guac_client_data->printjob_notif_fifo);
-		guac_client_log_info(client, "processed");
-	}
+    /* Handle PDF Printjob availability message */
+    if (FD_ISSET(guac_client_data->printjob_notif_fifo, &rfds)) {
+        guac_rdp_process_printing_notification(client, guac_client_data->printjob_notif_fifo);
+        guac_client_log_info(client, "processed");
+    }
 
     /* Success */
     return 0;
@@ -297,7 +295,6 @@ int rdp_guac_client_mouse_handler(guac_client* client, int x, int y, int mask) {
 
         }
 
-
         guac_client_data->mouse_button_mask = mask;
     }
 
@@ -329,13 +326,9 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
                 __guac_rdp_update_keysyms(client, keysym_desc->clear_keysyms, 1, 0);
 
             /* Send actual key */
-            rdp_inst->input->KeyboardEvent(
-					rdp_inst->input,
-                    keysym_desc->flags
-					    | (pressed ? KBD_FLAGS_DOWN : KBD_FLAGS_RELEASE),
-					keysym_desc->scancode);
-
-			//guac_client_log_info(client, "Base flags are %d", keysym_desc->flags);
+            rdp_inst->input->KeyboardEvent(rdp_inst->input,
+                                           keysym_desc->flags | (pressed ? KBD_FLAGS_DOWN : KBD_FLAGS_RELEASE),
+                                           keysym_desc->scancode);
 
             /* If defined, release any keys that were originally released */
             if (keysym_desc->set_keysyms != NULL)
@@ -348,7 +341,7 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
             return 0;
 
         }
-	}
+    }
     /* Fall back to unicode events if undefined inside current keymap */
 
     /* Only send when key pressed - Unicode events do not have
@@ -368,20 +361,11 @@ int __guac_rdp_send_keysym(guac_client* client, int keysym, int pressed) {
             return 0;
         }
 
-		/*
-        guac_client_log_info(client, "Translated keysym 0x%x to U+%04X",
-                keysym, codepoint);
-		//*/
-
         /* Send Unicode event */
-        rdp_inst->input->UnicodeKeyboardEvent(
-                rdp_inst->input,
-                0, codepoint);
+        rdp_inst->input->UnicodeKeyboardEvent(rdp_inst->input,
+                                              0,
+                                              codepoint);
     }
-    /*
-    else
-        guac_client_log_info(client, "Ignoring key release (Unicode event)");
-	//*/
     return 0;
 }
 
@@ -465,47 +449,43 @@ char* decode_base64(char* data) {
 }
 
 int rdp_guac_client_seamrdp_handler(guac_client* client, char* data) {
-	rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
-	rdpChannels* channels = client_data->rdp_inst->context->channels;
-	RDP_EVENT* event = xnew(RDP_EVENT);
-	int bufferLength;
-	char *buffer;
+    rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
+    rdpChannels* channels = client_data->rdp_inst->context->channels;
+    RDP_EVENT* event = xnew(RDP_EVENT);
+    int bufferLength;
+    char *buffer;
 
-	bufferLength = strlen(data);
-	buffer = malloc(bufferLength+1);
-	strcpy(buffer, data);
+    bufferLength = strlen(data);
+    buffer = malloc(bufferLength+1);
+    strcpy(buffer, data);
 
-	/*printf("%s\n", buffer);*/
+    event->event_class = RDP_EVENT_CLASS_SEAMRDP;
+    event->event_type = 0;
+    event->on_event_free_callback = NULL;
+    event->user_data = decode_base64(data);;
 
-	event->event_class = RDP_EVENT_CLASS_SEAMRDP;
-	event->event_type = 0;
-	event->on_event_free_callback = NULL;
-	event->user_data = decode_base64(data);;
-
-	freerdp_channels_send_event(channels, (RDP_EVENT*) event);
-	return 0;
+    freerdp_channels_send_event(channels, (RDP_EVENT*) event);
+    return 0;
 }
 
 int rdp_guac_client_ovdapp_handler(guac_client* client, char* data) {
-	rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
-	rdpChannels* channels = client_data->rdp_inst->context->channels;
-	RDP_EVENT* event = xnew(RDP_EVENT);
-	int bufferLength;
-	char *buffer;
+    rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
+    rdpChannels* channels = client_data->rdp_inst->context->channels;
+    RDP_EVENT* event = xnew(RDP_EVENT);
+    int bufferLength;
+    char *buffer;
 
-	bufferLength = strlen(data);
-	buffer = malloc(bufferLength+1);
-	strcpy(buffer, data);
+    bufferLength = strlen(data);
+    buffer = malloc(bufferLength+1);
+    strcpy(buffer, data);
 
-	/*printf("%s\n", buffer);*/
+    event->event_class = RDP_EVENT_CLASS_OVDAPP;
+    event->event_type = 0;
+    event->on_event_free_callback = NULL;
+    event->user_data = buffer;
 
-	event->event_class = RDP_EVENT_CLASS_OVDAPP;
-	event->event_type = 0;
-	event->on_event_free_callback = NULL;
-	event->user_data = buffer;
-
-	freerdp_channels_send_event(channels, (RDP_EVENT*) event);
-	return 0;
+    freerdp_channels_send_event(channels, (RDP_EVENT*) event);
+    return 0;
 }
 
 int rdp_guac_client_clipboard_handler(guac_client* client, char* data) {
