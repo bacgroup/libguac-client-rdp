@@ -69,6 +69,12 @@ typedef struct rdp_guac_client_data {
     rdpSettings* settings;
 
     /**
+     * Pointer to guacd-FreeRDP fifo to notify new available PDF printjobs
+     * Openned in read-only that way.
+     */
+    int printjob_notif_fifo;
+
+    /**
      * Button mask containing the OR'd value of all currently pressed buttons.
      */
     int mouse_button_mask;
@@ -125,12 +131,6 @@ typedef struct rdp_guac_client_data {
     int clipboard_num_formats;
     uint32 clipboard_format;
     ssize_t clipboard_length;
-
-	/** 
-	 * Pointer to guacd-FreeRDP fifo to notify new available PDF printjobs
-	 * Openned in read-only that way.
-	 */
-	int printjob_notif_fifo;
 
 } rdp_guac_client_data;
 

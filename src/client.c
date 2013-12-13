@@ -117,6 +117,7 @@ int __guac_receive_channel_data(freerdp* rdp_inst, int channelId, uint8* data, i
 boolean rdp_freerdp_pre_connect(freerdp* instance) {
     rdpContext* context = instance->context;
     guac_client* client = ((rdp_freerdp_context*) context)->client;
+    rdp_guac_client_data* client_data = (rdp_guac_client_data*) client->data;
     rdpChannels* channels = context->channels;
     rdpInput *input = instance->input;
     rdpBitmap* bitmap;
@@ -124,6 +125,23 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     rdpPointer* pointer;
     rdpPrimaryUpdate* primary;
     CLRCONV* clrconv;
+    RDP_PLUGIN_DATA *printer_data;
+
+    /* Prepare data for pdf printer */
+    client_data->rdp_inst = instance;
+    client_data->settings = instance->settings;
+    client_data->printjob_notif_fifo = -1;
+
+    printer_data = xnew(RDP_PLUGIN_DATA);
+    printer_data->size = 1;
+    printer_data->data[0] = "printer";
+    printer_data->data[1] = NULL;
+    printer_data->data[2] = NULL;
+    printer_data->data[3] = client_data;
+
+    /* Load rdpdr plugin (for printing) */
+    guac_client_log_info(client, "Loading printing support");
+    freerdp_channels_load_plugin(channels, instance->settings, "rdpdr", printer_data);
 
     /* Load clipboard plugin */
     guac_client_log_info(client, "Loading clipboard support");
@@ -136,26 +154,6 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     /* Load ovdapp plugin */
     guac_client_log_info(client, "Loading ovdapp support");
     freerdp_channels_load_plugin(channels, instance->settings, "ovdapp", NULL);
-
-	/* Load rdpdr plugin (for printing only) */
-	rdp_guac_client_data* client_data = (rdp_guac_client_data*)(client->data);
-
-	if (guac_rdp_prepare_ulteo_printing(instance, &(client_data->printjob_notif_fifo)) != 0) {
-        guac_protocol_send_error(client->socket, "Error initializing ulteo printing");
-        guac_socket_flush(client->socket);
-		return false;
-	}
-
-	RDP_PLUGIN_DATA* rdpdr_data = xzalloc(sizeof(RDP_PLUGIN_DATA)*5); // Why 5 ? When to free
-	rdpdr_data[0].size = sizeof(RDP_PLUGIN_DATA);
-	rdpdr_data[0].data[0] = "printer";
-	rdpdr_data[0].data[3] = (void*)xzalloc(MAX_PATH_LENGTH);
-
-	//FIXME: free()
-	snprintf(rdpdr_data[0].data[3], MAX_PATH_LENGTH,
-			 "%s/%s/fifo", FREERDP_ULTEO_SPOOL_PATH, instance->settings->username);
-
-	freerdp_channels_load_plugin(channels, instance->settings, "rdpdr", rdpdr_data);
 
     /* Init color conversion structure */
     clrconv = xnew(CLRCONV);

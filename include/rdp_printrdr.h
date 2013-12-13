@@ -38,7 +38,6 @@
 #include <freerdp/freerdp.h>
 
 
-#define FREERDP_ULTEO_SPOOL_PATH "/var/spool/ulteo/pdf-printer"
 #define MAX_PDF_PRINTJOB_NAME_LEN 200
 
 /** 
@@ -53,16 +52,6 @@
  */
 void guac_rdp_process_printing_notification(guac_client* client, int fd);
 
-
-/**
- * Prepares the spooling directory and fifo for communication with freerdp.
- *
- * Prepares the dir to hold PDFs of printjob and a FIFO.
- * Communication is made with FreeRDP module printer_ulteo_pdf.
- */
-int guac_rdp_prepare_ulteo_printing(freerdp* instance, // in args
-									int* p_fifo        // out args
-									);
 /**
  * Reads from the FreeRDP-fed fifo and sends a guacamole message to notify browser.
  */

@@ -36,14 +36,7 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <guacamole/protocol.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <fcntl.h>
-#include <dirent.h>
-#include <errno.h>
+#include <stdio.h>
 
 #include <freerdp/freerdp.h>
 #include <freerdp/channels/channels.h>
@@ -51,105 +44,11 @@
 #include <freerdp/utils/unicode.h>
 #include <freerdp/utils/memory.h>
 
-
 #include <guacamole/client.h>
-
+#include <guacamole/protocol.h>
 
 #include "client.h"
 #include "rdp_printrdr.h"
-
-// C doesn't have any way to remove recursivly a directory...
-int rmrf(const char *path) {
-	DIR *d = opendir(path);
-	size_t path_len = strlen(path);
-	int r = -1;
-	if (d) {
-		struct dirent *p;
-		r = 0;
-		while (!r && (p=readdir(d))) {
-			int r2 = -1;
-			char *buf;
-			size_t len;
-				
-			/* Skip the names "." and ".." as we don't want to recurse on them. */
-			if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, "..")) {
-				continue;
-			}
-
-			len = path_len + strlen(p->d_name) + 2; 
-			buf = malloc(len);
-					
-			if (buf) {
-				struct stat statbuf;
-				snprintf(buf, len, "%s/%s", path, p->d_name);
-						
-				if (!stat(buf, &statbuf)) {
-					if (S_ISDIR(statbuf.st_mode)) {
-						r2 = rmrf(buf);
-					}
-					else {
-						r2 = unlink(buf);
-					}
-				}
-				free(buf);
-			}
-			r = r2;
-		}
-		closedir(d);
-	}
-	if (!r)	{
-		r = rmdir(path);
-	}
-	return r;
-}
-
-/**
- * Prepares the spooling directory and fifo for communication with freerdp.
- *
- * Prepares the dir to hold PDFs of printjob and a FIFO.
- * Communication is made with FreeRDP module printer_ulteo_pdf.
- */
-int guac_rdp_prepare_ulteo_printing(freerdp* instance, // in args
-									int* p_fifo        // out args
-									) {
-	char spool_fifo[MAX_PDF_PRINTJOB_NAME_LEN];
-	char session_spool_path[MAX_PDF_PRINTJOB_NAME_LEN];
-	guac_client* client = ((rdp_freerdp_context*)(instance->context))->client;
-
-	sprintf(session_spool_path, "%s/%s",
-			FREERDP_ULTEO_SPOOL_PATH, instance->settings->username);
-
-
-	sprintf(spool_fifo, "%s/fifo", session_spool_path);
-
-	guac_client_log_info(client, "Preparing printing support, will spool on FIFO %s", 
-						 spool_fifo);
-
-	if (mkdir(session_spool_path, 0755)) {
-		if (errno == EEXIST) {
-			rmrf(session_spool_path);
-			mkdir(session_spool_path, 0755);
-		} else {
-			perror("Cannot create session spool dir: ");
-			return -1;
-		}
-	}
-	
-	if (mkfifo(spool_fifo, S_IRWXU) != 0) {
-		perror("Cannot create spool fifo: ");
-		return -2;
-	}
-	
-	// Opened in nonblock mode, instead, we will block forever on open()
-	*p_fifo = open(spool_fifo, O_RDONLY|O_NONBLOCK);
-	if (*p_fifo <= 0) {
-		perror("Cannot open FIFO: ");
-		return -3;
-	}
-
-	return 0;
-}
-
 
 /**
  * Transform a local filename into an URL to fetch the URL.

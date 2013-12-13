@@ -146,10 +146,12 @@ int rdp_guac_client_handle_messages(guac_client* client) {
     }
 
     /* Adds Ulteo-printing notification FD */
-    fd = (int)(long) (guac_client_data->printjob_notif_fifo);
-    if (fd > max_fd)
-        max_fd = fd;
-    FD_SET(fd, &rfds);
+		if (guac_client_data->printjob_notif_fifo >= 0) {
+			fd = (int)(long) (guac_client_data->printjob_notif_fifo);
+			if (fd > max_fd)
+					max_fd = fd;
+			FD_SET(fd, &rfds);
+		}
 
     /* Construct write fd_set */
     FD_ZERO(&wfds);
@@ -219,10 +221,12 @@ int rdp_guac_client_handle_messages(guac_client* client) {
     }
 
     /* Handle PDF Printjob availability message */
-    if (FD_ISSET(guac_client_data->printjob_notif_fifo, &rfds)) {
-        guac_rdp_process_printing_notification(client, guac_client_data->printjob_notif_fifo);
-        guac_client_log_info(client, "processed");
-    }
+		if (guac_client_data->printjob_notif_fifo >= 0) {
+			if (FD_ISSET(guac_client_data->printjob_notif_fifo, &rfds)) {
+					guac_rdp_process_printing_notification(client, guac_client_data->printjob_notif_fifo);
+					guac_client_log_info(client, "processed");
+			}
+		}
 
     /* Success */
     return 0;
