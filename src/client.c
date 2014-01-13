@@ -307,6 +307,7 @@ int guac_client_init(guac_client* client, int argc, char** argv) {
     rdpSettings* settings;
 
     char* hostname;
+    char* connection_type = NULL;
     int port = RDP_DEFAULT_PORT;
     boolean bitmap_cache;
 
@@ -355,6 +356,31 @@ int guac_client_init(guac_client* client, int argc, char** argv) {
 
     /* Set settings */
     settings = rdp_inst->settings;
+
+    /* Connection type */
+    connection_type = getenv("GUACD_RDP_CONNECTION_TYPE");
+    if(connection_type != NULL) {
+        unsigned int type = 0;
+        type = atoi(connection_type);
+
+        if( ! (type >=0 && type <= 7)) {
+            guac_client_log_info(client, "Connection_type invalid : (%s)", connection_type);
+        } else {
+            char *type_str[] = {"CONNECTION_TYPE_UNDEFINED",
+                                "CONNECTION_TYPE_MODEM",
+                                "CONNECTION_TYPE_BROADBAND_LOW",
+                                "CONNECTION_TYPE_SATELLITE",
+                                "CONNECTION_TYPE_BROADBAND_HIGH",
+                                "CONNECTION_TYPE_WAN",
+                                "CONNECTION_TYPE_LAN",
+                                "CONNECTION_TYPE_AUTO"
+            };
+            guac_client_log_info(client, "Connection_type = %d (%s)", type, type_str[type]);
+            settings->connection_type = type;
+        }
+    } else {
+        guac_client_log_info(client, "No connection_type parameter.");
+    }
 
     /* --no-auth */
     settings->authentication = false;
