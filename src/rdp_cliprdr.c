@@ -203,6 +203,9 @@ void guac_rdp_process_cb_data_response(guac_client* client,
     rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
     UNICONV* uniconv;
 
+    if(! event->data || ! event->size)
+        return;
+
     /* Received clipboard data */
     if (event->data[event->size - 1] == '\0') {
 
