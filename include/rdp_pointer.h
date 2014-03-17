@@ -62,5 +62,6 @@ void guac_rdp_pointer_set(rdpContext* context, rdpPointer* pointer);
 void guac_rdp_pointer_free(rdpContext* context, rdpPointer* pointer);
 void guac_rdp_pointer_set_null(rdpContext* context);
 void guac_rdp_pointer_set_default(rdpContext* context);
+void guac_rdp_pointer_color(rdpContext* context, POINTER_COLOR_UPDATE* pointer_color);
 
 #endif

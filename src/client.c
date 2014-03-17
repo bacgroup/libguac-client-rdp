@@ -222,6 +222,9 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     offscreen_cache_register_callbacks(instance->update);
     palette_cache_register_callbacks(instance->update);
 
+    /* Overload PointerColor function to support 24bit pointers */
+    instance->update->pointer->PointerColor = guac_rdp_pointer_color;
+
     /* Set up IME status handler */
     input->KeyboardImeStatusEvent = guac_rdp_keyboard_ime_state;
 
