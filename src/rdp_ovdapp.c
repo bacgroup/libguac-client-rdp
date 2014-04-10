@@ -28,12 +28,19 @@
 #include "client.h"
 #include <math.h>
 
-void guac_rdp_process_ovdapp_event(guac_client* client, RDP_EVENT* event) {
-	char *input, *output;
-	int inputLength, outputLength;
+typedef struct ovdapp_event {
+	unsigned int size;
+	char *data;
+} ovdappEvent;
 
-	input = (char*)(event->user_data);
-	inputLength = strlen(input);
+void guac_rdp_process_ovdapp_event(guac_client* client, RDP_EVENT* event) {
+	char *input;
+	int length_raw, length_base64;
+	ovdappEvent *ovdapp_ev = event->user_data;
+
+	input = ovdapp_ev->data;
+	length_raw = ovdapp_ev->size;
+	length_base64 = (length_raw+2) / 3 * 4;
 
 	/* Encode data into Guacamole protocole :
 		 <field#1 lenght>.field#1,<field#2 lenght>.field#2,[...];
@@ -41,15 +48,10 @@ void guac_rdp_process_ovdapp_event(guac_client* client, RDP_EVENT* event) {
 	   ex : 3.foo,3.bar,7.johnDoe,4.1337;
 	*/
 
-	outputLength  = inputLength;
-	outputLength += 9; /* strlen("6.ovdapp,") */
-	outputLength += ((int)(ceil(log10(inputLength)))) + 1; /* count digits for the length */
-	outputLength += 2; /* '.' and ';' */
-	output=malloc(outputLength+1);
-
-	snprintf(output, outputLength+1, "6.ovdapp,%d.%s;", inputLength, input);
-
-	guac_socket_write_string(client->socket, output);
-	/*printf("%s\n", output);*/
-	free(output);
+	guac_socket_write_string(client->socket, "6.ovdapp,");
+	guac_socket_write_int   (client->socket, length_base64);
+	guac_socket_write_string(client->socket, ".");
+	guac_socket_write_base64(client->socket, input, length_raw);
+	guac_socket_flush_base64(client->socket);
+	guac_socket_write_string(client->socket, ";");
 }
