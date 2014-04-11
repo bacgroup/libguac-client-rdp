@@ -68,6 +68,7 @@
 #include "rdp_printrdr.h"
 #include "rdp_seamrdp.h"
 #include "rdp_ovdapp.h"
+#include "rdp_ukbrdr.h"
 #include "guac_handlers.h"
 #include "unicode_convtable.h"
 
@@ -209,6 +210,8 @@ int rdp_guac_client_handle_messages(guac_client* client) {
             guac_rdp_process_seamrdp_event(client, event);
         if (event->event_class == RDP_EVENT_CLASS_OVDAPP)
             guac_rdp_process_ovdapp_event(client, event);
+        if (event->event_class == RDP_EVENT_CLASS_UKBRDR)
+            guac_rdp_process_ukbrdr_event(client, event);
         freerdp_event_free(event);
 
     }
@@ -557,6 +560,28 @@ int rdp_guac_client_ovdapp_handler(guac_client* client, char* data) {
     event->event_type = 0;
     event->on_event_free_callback = NULL;
     event->user_data = ovdapp_ev;
+
+    freerdp_channels_send_event(channels, (RDP_EVENT*) event);
+    return 0;
+}
+
+typedef struct ukbrdr_event {
+    unsigned int size;
+    char *data;
+} ukbrdrEvent;
+
+int rdp_guac_client_ukbrdr_handler(guac_client* client, char* data) {
+    rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
+    rdpChannels* channels = client_data->rdp_inst->context->channels;
+    RDP_EVENT* event = xnew(RDP_EVENT);
+    ukbrdrEvent *ukbrdr_ev = malloc(sizeof(ukbrdrEvent));
+
+    ukbrdr_ev->data = decode_base64(data, &(ukbrdr_ev->size));
+
+    event->event_class = RDP_EVENT_CLASS_UKBRDR;
+    event->event_type = 0;
+    event->on_event_free_callback = NULL;
+    event->user_data = ukbrdr_ev;
 
     freerdp_channels_send_event(channels, (RDP_EVENT*) event);
     return 0;
