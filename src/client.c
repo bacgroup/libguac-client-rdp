@@ -79,6 +79,7 @@
 #include "rdp_keyboard_status.h"
 #include "rdp_seamrdp.h"
 #include "rdp_ovdapp.h"
+#include "rdp_ukbrdr.h"
 #include "default_pointer.h"
 
 /* Client plugin arguments */
@@ -154,6 +155,10 @@ boolean rdp_freerdp_pre_connect(freerdp* instance) {
     /* Load ovdapp plugin */
     guac_client_log_info(client, "Loading ovdapp support");
     freerdp_channels_load_plugin(channels, instance->settings, "ovdapp", NULL);
+
+    /* Load ovdapp plugin */
+    guac_client_log_info(client, "Loading ukbrdr support");
+    freerdp_channels_load_plugin(channels, instance->settings, "ukbrdr", NULL);
 
     /* Init color conversion structure */
     clrconv = xnew(CLRCONV);
@@ -260,6 +265,7 @@ boolean rdp_freerdp_post_connect(freerdp* instance) {
     client->clipboard_handler = rdp_guac_client_clipboard_handler;
     client->seamrdp_handler = rdp_guac_client_seamrdp_handler;
     client->ovdapp_handler = rdp_guac_client_ovdapp_handler;
+    client->ukbrdr_handler = rdp_guac_client_ukbrdr_handler;
     return true;
 
 }

@@ -44,6 +44,7 @@ lib_LTLIBRARIES = libguac-client-rdp.la
 libguac_client_rdp_la_SOURCES = src/client.c src/rdp_bitmap.c src/rdp_glyph.c src/rdp_pointer.c src/rdp_gdi.c src/guac_handlers.c src/rdp_cliprdr.c \
 				 src/rdp_seamrdp.c \
 				 src/rdp_ovdapp.c \
+				 src/rdp_ukbrdr.c \
 				 src/rdp_printrdr.c \
 				 src/unicode_convtable.c\
 				 src/rdp_keymap.c \
@@ -55,6 +56,7 @@ libguac_client_rdp_la_SOURCES = src/client.c src/rdp_bitmap.c src/rdp_glyph.c sr
 noinst_HEADERS =              \
 	include/rdp_seamrdp.h \
 	include/rdp_ovdapp.h \
+	include/rdp_ukbrdr.h \
 	include/client.h          \
 	include/default_pointer.h \
 	include/guac_handlers.h   \

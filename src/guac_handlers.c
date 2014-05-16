@@ -68,6 +68,7 @@
 #include "rdp_printrdr.h"
 #include "rdp_seamrdp.h"
 #include "rdp_ovdapp.h"
+#include "rdp_ukbrdr.h"
 #include "guac_handlers.h"
 #include "unicode_convtable.h"
 
@@ -209,6 +210,8 @@ int rdp_guac_client_handle_messages(guac_client* client) {
             guac_rdp_process_seamrdp_event(client, event);
         if (event->event_class == RDP_EVENT_CLASS_OVDAPP)
             guac_rdp_process_ovdapp_event(client, event);
+        if (event->event_class == RDP_EVENT_CLASS_UKBRDR)
+            guac_rdp_process_ukbrdr_event(client, event);
         freerdp_event_free(event);
 
     }
@@ -421,34 +424,102 @@ int rdp_guac_client_key_handler(guac_client* client, int keysym, int pressed) {
     return 0;
 }
 
-static char reverseCode(char c) {
-    if (c >= 'A' && c <= 'Z') return (c-'A');
-    if (c >= 'a' && c <= 'z') return (c-'a')+26;
-    if (c >= '0' && c <= '9') return (c-'0')+52;
-    if (c == '+') return 62;
-    if (c == '/') return 63;
-    return 0;
+
+/* Base64 Decode for SeamRDP / OvdApp */
+
+typedef enum {
+    step_a, step_b, step_c, step_d
+} base64_decodestep;
+
+typedef struct {
+    base64_decodestep step;
+    char plainchar;
+} base64_decodestate;
+
+int base64_decode_value(char value_in) {
+    static const char decoding[] = {62,-1,-1,-1,63,52,53,54,55,56,57,58,59,60,61,-1,-1,-1,-2,-1,-1,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,-1,-1,-1,-1,-1,-1,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51};
+    static const char decoding_size = sizeof(decoding);
+    value_in -= 43;
+    if (value_in < 0 || value_in >= decoding_size) return -1;
+    return decoding[(int)value_in];
 }
 
-char* decode_base64(char* data) {
-    char buffer[4];
-    int offset;
-    int data_len = strlen(data);
-    char *output = malloc((data_len*3/4)+1);
+void base64_init_decodestate(base64_decodestate* state_in) {
+    state_in->step = step_a;
+    state_in->plainchar = 0;
+}
 
-    for (offset=0 ; offset < data_len ; offset+=4) {
-        int base = offset*3/4;
-        buffer[0] = reverseCode(data[offset+0]);
-        buffer[1] = reverseCode(data[offset+1]);
-        buffer[2] = reverseCode(data[offset+2]);
-        buffer[3] = reverseCode(data[offset+3]);
+int base64_decode_block(const char* code_in, const int length_in, char* plaintext_out, base64_decodestate* state_in) {
+    const char* codechar = code_in;
+    char* plainchar = plaintext_out;
+    char fragment;
+    *plainchar = state_in->plainchar;
+    switch (state_in->step) {
+        while (1) {
+            case step_a:
+                do {
+                    if (codechar == code_in+length_in) {
+                        state_in->step = step_a;
+                        state_in->plainchar = *plainchar;
+                        return plainchar - plaintext_out;
+                    }
+                    fragment = (char)base64_decode_value(*codechar++);
+                } while (fragment < 0);
+                *plainchar = (fragment & 0x03f) << 2;
+            case step_b:
+                do {
+                    if (codechar == code_in+length_in) {
+                        state_in->step = step_b;
+                        state_in->plainchar = *plainchar;
+                        return plainchar - plaintext_out;
+                    }
+                    fragment = (char)base64_decode_value(*codechar++);
+                } while (fragment < 0);
+                *plainchar++ |= (fragment & 0x030) >> 4;
+                *plainchar = (fragment & 0x00f) << 4;
+            case step_c:
+                do {
+                    if (codechar == code_in+length_in) {
+                        state_in->step = step_c;
+                        state_in->plainchar = *plainchar;
+                        return plainchar - plaintext_out;
+                    }
+                    fragment = (char)base64_decode_value(*codechar++);
+                } while (fragment < 0);
+                *plainchar++ |= (fragment & 0x03c) >> 2;
+                *plainchar = (fragment & 0x003) << 6;
+            case step_d:
+                do {
+                    if (codechar == code_in+length_in) {
+                        state_in->step = step_d;
+                        state_in->plainchar = *plainchar;
+                        return plainchar - plaintext_out;
+                    }
+                    fragment = (char)base64_decode_value(*codechar++);
+                } while (fragment < 0);
+                *plainchar++ |= (fragment & 0x03f);
+        }
+    }
+    /* control should not reach here */
+    return plainchar - plaintext_out;
+}
 
-        output[base+0] = (buffer[0] << 2) | (((buffer[1] & 0x30) >> 4) & 0x03);
-        output[base+1] = ((buffer[1] & 0x0F) << 4) | (((buffer[2] & 0x3C) >> 2) & 0x0F);
-        output[base+2] = ((buffer[2] & 0x03) << 6) | buffer[3];
+char* decode_base64(const char* input, unsigned int *size) {
+    int data_len = strlen(input);
+    char *output = malloc(data_len);
+    char *c = output;
+    int cnt = 0;
+    base64_decodestate s;
+
+    base64_init_decodestate(&s);
+    cnt = base64_decode_block(input, data_len, c, &s);
+    c += cnt;
+    *c = 0;
+
+    if(size != NULL) {
+        *size = cnt;
     }
 
-    output[data_len*3/4]='\0';
     return output;
 }
 
@@ -466,27 +537,51 @@ int rdp_guac_client_seamrdp_handler(guac_client* client, char* data) {
     event->event_class = RDP_EVENT_CLASS_SEAMRDP;
     event->event_type = 0;
     event->on_event_free_callback = NULL;
-    event->user_data = decode_base64(data);;
+    event->user_data = decode_base64(data, NULL);
 
     freerdp_channels_send_event(channels, (RDP_EVENT*) event);
     return 0;
 }
 
+typedef struct ovdapp_event {
+    unsigned int size;
+    char *data;
+} ovdappEvent;
+
 int rdp_guac_client_ovdapp_handler(guac_client* client, char* data) {
     rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
     rdpChannels* channels = client_data->rdp_inst->context->channels;
     RDP_EVENT* event = xnew(RDP_EVENT);
-    int bufferLength;
-    char *buffer;
+    ovdappEvent *ovdapp_ev = malloc(sizeof(ovdappEvent));
 
-    bufferLength = strlen(data);
-    buffer = malloc(bufferLength+1);
-    strcpy(buffer, data);
+    ovdapp_ev->data = decode_base64(data, &(ovdapp_ev->size));
 
     event->event_class = RDP_EVENT_CLASS_OVDAPP;
     event->event_type = 0;
     event->on_event_free_callback = NULL;
-    event->user_data = buffer;
+    event->user_data = ovdapp_ev;
+
+    freerdp_channels_send_event(channels, (RDP_EVENT*) event);
+    return 0;
+}
+
+typedef struct ukbrdr_event {
+    unsigned int size;
+    char *data;
+} ukbrdrEvent;
+
+int rdp_guac_client_ukbrdr_handler(guac_client* client, char* data) {
+    rdp_guac_client_data *client_data = (rdp_guac_client_data*) client->data;
+    rdpChannels* channels = client_data->rdp_inst->context->channels;
+    RDP_EVENT* event = xnew(RDP_EVENT);
+    ukbrdrEvent *ukbrdr_ev = malloc(sizeof(ukbrdrEvent));
+
+    ukbrdr_ev->data = decode_base64(data, &(ukbrdr_ev->size));
+
+    event->event_class = RDP_EVENT_CLASS_UKBRDR;
+    event->event_type = 0;
+    event->on_event_free_callback = NULL;
+    event->user_data = ukbrdr_ev;
 
     freerdp_channels_send_event(channels, (RDP_EVENT*) event);
     return 0;
@@ -508,8 +603,7 @@ int rdp_guac_client_clipboard_handler(guac_client* client, char* data) {
     free(client_data->clipboard);
 
     /* Store data in client */
-    client_data->clipboard = decode_base64(data);
-    client_data->clipboard_length = strlen(client_data->clipboard);
+    client_data->clipboard = decode_base64(data, (unsigned int *) &(client_data->clipboard_length));
 
     /* Notify server that text data is now available */
     format_list->formats = (uint32*) malloc(sizeof(uint32));

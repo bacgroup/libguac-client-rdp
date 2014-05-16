@@ -28,18 +28,18 @@
 #include "client.h"
 #include <math.h>
 
-typedef struct ovdapp_event {
+typedef struct ukbrdr_event {
 	unsigned int size;
 	char *data;
-} ovdappEvent;
+} ukbrdrEvent;
 
-void guac_rdp_process_ovdapp_event(guac_client* client, RDP_EVENT* event) {
+void guac_rdp_process_ukbrdr_event(guac_client* client, RDP_EVENT* event) {
 	char *input;
 	int length_raw, length_base64;
-	ovdappEvent *ovdapp_ev = event->user_data;
+	ukbrdrEvent *ukbrdr_ev = event->user_data;
 
-	input = ovdapp_ev->data;
-	length_raw = ovdapp_ev->size;
+	input = ukbrdr_ev->data;
+	length_raw = ukbrdr_ev->size;
 	length_base64 = (length_raw+2) / 3 * 4;
 
 	/* Encode data into Guacamole protocole :
@@ -48,7 +48,7 @@ void guac_rdp_process_ovdapp_event(guac_client* client, RDP_EVENT* event) {
 	   ex : 3.foo,3.bar,7.johnDoe,4.1337;
 	*/
 
-	guac_socket_write_string(client->socket, "6.ovdapp,");
+	guac_socket_write_string(client->socket, "6.ukbrdr,");
 	guac_socket_write_int   (client->socket, length_base64);
 	guac_socket_write_string(client->socket, ".");
 	guac_socket_write_base64(client->socket, input, length_raw);
